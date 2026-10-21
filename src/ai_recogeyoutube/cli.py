@@ -9,6 +9,7 @@ from .catalog import import_catalog_csv
 from .config import get_settings
 from .db import initialize
 from .discovery import discover_work, load_work
+from .export import export_candidates
 from .models import Voice
 from .youtube import YouTubeAPIError, YouTubeClient
 
@@ -23,7 +24,7 @@ def doctor() -> None:
     print(f"YouTube API key configured: {'yes' if settings.youtube_api_key else 'no'}")
     print(f"Database path: {settings.db_path}")
     print(f"Max results per query: {settings.max_results}")
-    print("Audio analysis extra: install with [cyan]pip install -e '.[audio]'[/cyan]")
+    print("Audio analysis extra: install with [cyan]python -m pip install -e '.[audio]'[/cyan]")
 
 
 @app.command("init-db")
@@ -72,6 +73,26 @@ def discover_one(
     print(f"[green]Discovery finished for {work.title}[/green]")
     print(stats)
     print("[yellow]Results are candidates only; review before treating a voice as verified.[/yellow]")
+
+
+@app.command("export-candidates")
+def export_candidates_command(
+    output: Path = typer.Option(
+        Path("data/candidates.csv"), "--output", "-o",
+        help="Destination CSV file (Excel-compatible UTF-8).",
+    ),
+    work_id: str | None = typer.Option(
+        None, "--work-id", help="Optional exact work ID to export only one work."
+    ),
+) -> None:
+    """Export discovered videos to a CSV for human review."""
+    settings = get_settings()
+    try:
+        count = export_candidates(settings.db_path, output, work_id)
+    except (OSError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print(f"[green]Exported {count} candidates to:[/green] {output}")
+    print("[yellow]Voice guesses are search clues, not verified classifications.[/yellow]")
 
 
 if __name__ == "__main__":
