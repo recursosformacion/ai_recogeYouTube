@@ -6,7 +6,6 @@ authenticated session rather than trusting a client-supplied user ID.
 """
 import json
 from pathlib import Path
-import sqlite3
 
 from .db import connect
 
