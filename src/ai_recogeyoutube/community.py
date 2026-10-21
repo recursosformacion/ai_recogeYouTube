@@ -7,11 +7,12 @@ authenticated session rather than trusting a client-supplied user ID.
 import json
 from pathlib import Path
 
-from .db import connect
+from .db import connect, initialize
 
 
 def initialize_community_schema(db_path: Path) -> None:
     """Create normalized video, work-link, user and promotion tables."""
+    initialize(db_path)
     with connect(db_path) as db:
         db.executescript("""
         CREATE TABLE IF NOT EXISTS youtube_videos (
