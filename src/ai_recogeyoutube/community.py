@@ -184,7 +184,7 @@ def ranked_videos(db_path: Path, work_id: str, voice: str) -> list[dict]:
         rows = db.execute(
             """SELECT * FROM work_video_scores
                WHERE work_id=? AND voice IN (?, 'all')
-               ORDER BY CASE review_status WHEN 'confirmed' THEN 0 ELSE 1 END,
+               ORDER BY CASE review_status WHEN 'confirmed' THEN 0 WHEN 'pending' THEN 1 ELSE 2 END,
                         approval_count DESC, rejection_count ASC, title COLLATE NOCASE""",
             (work_id, voice),
         ).fetchall()
