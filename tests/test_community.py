@@ -6,8 +6,10 @@ from ai_recogeyoutube.community import (
     initialize_community_schema,
     ranked_videos,
     record_promotion,
+    sync_discovered_candidates,
 )
-from ai_recogeyoutube.db import upsert_work
+from ai_recogeyoutube.db import upsert_candidate, upsert_work
+from ai_recogeyoutube.models import YouTubeCandidate
 from ai_recogeyoutube.models import WorkRecord
 
 
@@ -65,3 +67,27 @@ def test_unknown_work_is_rejected(tmp_path: Path) -> None:
             db_path, user_id="u1", display_name="u1", work_id="missing",
             video_id="v1", url="https://www.youtube.com/watch?v=v1", title="Video",
         )
+
+
+
+def test_discovered_candidates_can_be_synced_into_review_model(tmp_path: Path) -> None:
+    db_path = tmp_path / "pilot.db"
+    setup_work(db_path)
+    upsert_candidate(
+        db_path,
+        YouTubeCandidate(
+            video_id="found-video",
+            url="https://www.youtube.com/watch?v=found-video",
+            title="Ave verum corpus soprano rehearsal",
+            channel_title="Choir channel",
+            work_id="w1",
+            voice_guess="soprano",
+            material_type="individual_part",
+        ),
+    )
+    assert sync_discovered_candidates(db_path, "w1") == 1
+    rows = ranked_videos(db_path, "w1", "soprano")
+    assert len(rows) == 1
+    assert rows[0]["approval_count"] == 0
+    assert rows[0]["review_status"] == "pending"
+    assert rows[0]["title"] == "Ave verum corpus soprano rehearsal"
