@@ -189,3 +189,25 @@ def ranked_videos(db_path: Path, work_id: str, voice: str) -> list[dict]:
             (work_id, voice),
         ).fetchall()
         return [dict(row) for row in rows]
+
+
+def set_review_status(
+    db_path: Path, *, work_id: str, video_id: str, voice: str, status: str,
+) -> None:
+    """Set moderator review state independently from community votes."""
+    if status not in {"pending", "confirmed", "rejected"}:
+        raise ValueError("status must be 'pending', 'confirmed' or 'rejected'")
+    if voice not in {"soprano", "alto", "tenor", "bass", "all", "unknown"}:
+        raise ValueError("unsupported voice")
+    initialize_community_schema(db_path)
+    with connect(db_path) as db:
+        cursor = db.execute(
+            """UPDATE work_videos SET review_status=?, updated_at=CURRENT_TIMESTAMP
+               WHERE work_id=? AND video_id=? AND voice=?""",
+            (status, work_id, video_id, voice),
+        )
+        if cursor.rowcount == 0:
+            raise ValueError(
+                f"No candidate found for work={work_id}, video={video_id}, voice={voice}; "
+                "run sync-review first"
+            )
