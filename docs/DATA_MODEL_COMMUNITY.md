@@ -33,3 +33,8 @@ Tras importar una obra de prueba, registrar una promoción con `record_promotion
 ## Límite del piloto
 
 Los identificadores y nombres de usuarios son locales de prueba. No hay registro público, autenticación, moderación ni garantías de que quien vota sea una persona distinta. Antes de publicar resultados, habrá que definir autenticación, abuso, retirada de votos, auditoría y política de moderación.
+
+
+## Descubrimiento y migración local
+
+La tabla de candidatos del descubrimiento identifica ahora cada asociación por la combinación estable de vídeo y obra. Así, descubrir el mismo vídeo al buscar dos obras conserva ambos vínculos, y volver a encontrarlo para una obra actualiza solo esa asociación. Al inicializar una base antigua, el programa migra automáticamente la tabla anterior —que tenía el ID de vídeo como clave única— y conserva sus filas. Esta migración afecta únicamente a la base SQLite local del piloto.
