@@ -101,6 +101,10 @@ Después de descubrir candidatos, se pueden sincronizar con las tablas de revisi
 ```powershell
 ai-youtube sync-review --work-id ID_DE_OBRA
 ai-youtube rank-videos ID_DE_OBRA --voice soprano
+
+# Confirmar o descartar una asociación tras revisión humana
+ai-youtube review-video --work-id ID_DE_OBRA --video-id ID_YOUTUBE --voice soprano --status confirmed
+ai-youtube review-video --work-id ID_DE_OBRA --video-id ID_YOUTUBE --voice soprano --status rejected
 ```
 
 Para probar una aprobación manual en la base local:
@@ -111,3 +115,11 @@ ai-youtube rank-videos ID_DE_OBRA --voice soprano
 ```
 
 Los IDs de usuario de estos comandos son únicamente etiquetas locales de prueba; no equivalen a usuarios autenticados. La API futura debe obtener la identidad desde el servidor. Todo el modelo comunitario es experimental y no escribe en OSAP.
+
+
+El estado editorial se gestiona por separado de los votos de la comunidad:
+- `pending`: candidato aún no verificado.
+- `confirmed`: asociación obra/vídeo/voz revisada y aceptada; se prioriza en el ranking.
+- `rejected`: asociación revisada y descartada; queda detrás de pendientes.
+
+`review-video` requiere que la asociación ya exista en las tablas de revisión, normalmente tras ejecutar `sync-review`. Los votos comunitarios no cambian por modificar el estado editorial, y el estado editorial no suma votos.
