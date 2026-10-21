@@ -157,13 +157,16 @@ document.getElementById('reject').onclick=()=>decide('rejected');
 </script>""".replace("__DATA__", json.dumps({
                     "work_id": work_id, "video_id": video_id, "voice": voice,
                     "url": "https://www.youtube.com/watch?v=" + video_id, "title": title,
+                    "user_id": params.get("user", [""])[0].trim() || "anonymous",
+                    "display_name": params.get("user", [""])[0].trim() || "anonymous",
                 }, ensure_ascii=False).replace("</", "<\/"))
                 self.send_html(_page("Revisar vídeo", content, script))
                 return
             content = """<h1>Buscar vídeos para una obra musical</h1>
-<p>El formulario debe consultar YouTube en directo y guardar metadatos localmente. No descarga audio ni modifica OSAP.</p>
+<p>La búsqueda consulta YouTube en directo y guarda metadatos localmente. No descarga audio ni modifica OSAP. El usuario es un identificador libre, sin autenticación.</p>
 <div class="notice">«Todas las voces» busca las cuatro cuerdas y una consulta general. «Canción completa / sin voz» busca sin añadir términos de cuerda.</div>
 <div class="panel"><form id="search">
+<label>Usuario<input name="user" placeholder="Identificador del usuario" autocomplete="off"></label>
 <label>Canción / título<input name="song" placeholder="Título de la obra"></label>
 <label>Autor / compositor<input name="author" placeholder="Nombre del compositor"></label>
 <label>Tipo de búsqueda<select name="voice"><option value="all">Todas las voces</option><option value="song">Canción completa / sin voz</option><option value="soprano">Soprano</option><option value="alto">Alto</option><option value="tenor">Tenor</option><option value="bass">Bajo</option></select></label>
@@ -180,7 +183,7 @@ const info=document.createElement('div'),h=document.createElement('h2'),meta=doc
 h.textContent=item.work_title;link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=item.video_title;
 meta.className='meta';meta.append(link,document.createElement('br'));meta.lastChild.after(document.createTextNode('Autor/canal: '+(item.channel||'Canal desconocido')+' · votos: '+item.approval_count+' · votos del autor: '+item.author_votes+' · última votación: '+item.last_vote+' · voz: '+item.voice));
 info.append(h,meta);const actions=document.createElement('div');actions.className='actions';const button=document.createElement('button');button.className='primary';button.textContent='Revisar vídeo';if(!item.work_id){button.disabled=true;button.title='No se ha encontrado una obra coincidente en el catálogo importado';}
-const review=new URL('/review',location.origin);for(const [k,v] of Object.entries({work_id:item.work_id,video_id:item.video_id,voice:item.voice,title:item.video_title}))review.searchParams.set(k,v);
+const review=new URL('/review',location.origin);for(const [k,v] of Object.entries({work_id:item.work_id,video_id:item.video_id,voice:item.voice,title:item.video_title,user:form.elements.user.value.trim()}))review.searchParams.set(k,v);
 button.onclick=()=>window.open(review,'review_'+item.video_id,'width=1000,height=800,resizable=yes,scrollbars=yes');
 actions.append(button);card.append(info,actions);results.append(card)}
 }catch(e){summary.textContent='No se pudo buscar: '+e.message}});
@@ -204,6 +207,8 @@ actions.append(button);card.append(info,actions);results.append(card)}
                 voice = str(data.get("voice", "unknown")).strip()
                 if not work_id or not video_id:
                     raise ValueError("Falta el identificador de obra o vídeo")
+                user_id = str(data.get("user_id", "")).strip() or "anonymous"
+                display_name = str(data.get("display_name", "")).strip() or user_id
                 with connect(db_path) as db:
                     candidate = db.execute(
                         """SELECT c.url,c.title,c.payload_json FROM candidates c
@@ -214,7 +219,7 @@ actions.append(button);card.append(info,actions);results.append(card)}
                     raise ValueError("El candidato ya no existe en el catálogo local")
                 payload = json.loads(candidate["payload_json"])
                 record_promotion(
-                    db_path, user_id="local-reviewer", display_name="Revisor local",
+                    db_path, user_id=user_id, display_name=display_name,
                     work_id=work_id, video_id=video_id, url=candidate["url"],
                     title=candidate["title"], channel_title=payload.get("channel_title", ""),
                     voice=voice, material_type=payload.get("material_type", "unknown"),
