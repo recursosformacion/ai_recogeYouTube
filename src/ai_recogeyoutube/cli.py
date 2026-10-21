@@ -6,6 +6,7 @@ import typer
 from rich import print
 
 from .catalog import import_catalog_csv
+from .community import ranked_videos, record_promotion
 from .config import get_settings
 from .db import initialize
 from .discovery import discover_work, load_work
@@ -93,6 +94,56 @@ def export_candidates_command(
         raise typer.BadParameter(str(exc)) from exc
     print(f"[green]Exported {count} candidates to:[/green] {output}")
     print("[yellow]Voice guesses are search clues, not verified classifications.[/yellow]")
+
+
+@app.command("promote-video")
+def promote_video(
+    work_id: str = typer.Option(..., "--work-id"),
+    video_id: str = typer.Option(..., "--video-id"),
+    url: str = typer.Option(..., "--url"),
+    title: str = typer.Option(..., "--title"),
+    user_id: str = typer.Option(..., "--user-id", help="Local pilot user ID, not OSAP authentication."),
+    voice: str = typer.Option("unknown", "--voice"),
+    decision: str = typer.Option("approved", "--decision"),
+    channel_title: str = typer.Option("", "--channel"),
+    material_type: str = typer.Option("unknown", "--material-type"),
+    note: str = typer.Option("", "--note"),
+) -> None:
+    """Record or update a local user's decision for a work/video/voice."""
+    settings = get_settings()
+    initialize(settings.db_path)
+    try:
+        record_promotion(
+            settings.db_path, user_id=user_id, display_name=user_id,
+            work_id=work_id, video_id=video_id, url=url, title=title,
+            channel_title=channel_title, voice=voice, decision=decision,
+            material_type=material_type, note=note,
+        )
+    except (ValueError, OSError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print("[green]Local promotion decision saved.[/green]")
+    print("[yellow]Pilot only: user ID is not authenticated.[/yellow]")
+
+
+@app.command("rank-videos")
+def rank_videos(
+    work_id: str = typer.Argument(...),
+    voice: str = typer.Option("soprano", "--voice"),
+) -> None:
+    """List local video candidates ranked by review status and community decisions."""
+    settings = get_settings()
+    try:
+        rows = ranked_videos(settings.db_path, work_id, voice)
+    except (ValueError, OSError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    if not rows:
+        print("[yellow]No linked videos found for this work/voice.[/yellow]")
+        return
+    for row in rows:
+        print(
+            f"{row['approval_count']} approvals / {row['rejection_count']} rejections"
+            f" · {row['review_status']} · {row['voice']} · {row['title']} · {row['url']}"
+        )
 
 
 if __name__ == "__main__":
