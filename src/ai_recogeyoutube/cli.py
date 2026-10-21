@@ -6,7 +6,9 @@ import typer
 from rich import print
 
 from .catalog import import_catalog_csv
-from .community import ranked_videos, record_promotion, sync_discovered_candidates
+from .community import (
+    ranked_videos, record_promotion, set_review_status, sync_discovered_candidates,
+)
 from .config import get_settings
 from .db import initialize
 from .discovery import discover_work, load_work
@@ -164,3 +166,24 @@ def sync_review(
 
 if __name__ == "__main__":
     app()
+
+
+
+@app.command("review-video")
+def review_video(
+    work_id: str = typer.Option(..., "--work-id"),
+    video_id: str = typer.Option(..., "--video-id"),
+    voice: str = typer.Option(..., "--voice"),
+    status: str = typer.Option(..., "--status", help="pending, confirmed or rejected"),
+) -> None:
+    """Set moderator verification state for one work/video/voice association."""
+    settings = get_settings()
+    try:
+        set_review_status(
+            settings.db_path, work_id=work_id, video_id=video_id,
+            voice=voice, status=status,
+        )
+    except (ValueError, OSError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print(f"[green]Review status updated:[/green] {work_id} · {voice} · {status}")
+    print("[yellow]This changes moderator review state, not community vote counts.[/yellow]")
