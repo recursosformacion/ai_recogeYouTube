@@ -90,3 +90,34 @@ def test_discovered_candidates_can_be_synced_into_review_model(tmp_path: Path) -
     assert rows[0]["approval_count"] == 0
     assert rows[0]["review_status"] == "pending"
     assert rows[0]["title"] == "Ave verum corpus soprano rehearsal"
+
+
+
+def test_sync_keeps_same_video_linked_to_multiple_works(tmp_path: Path) -> None:
+    db_path = tmp_path / "pilot.db"
+    setup_work(db_path)
+    upsert_work(db_path, WorkRecord(work_id="w2", title="Another work"))
+    upsert_candidate(
+        db_path,
+        YouTubeCandidate(
+            video_id="shared-video",
+            url="https://www.youtube.com/watch?v=shared-video",
+            title="Shared recording",
+            work_id="w1",
+            voice_guess="soprano",
+        ),
+    )
+    upsert_candidate(
+        db_path,
+        YouTubeCandidate(
+            video_id="shared-video",
+            url="https://www.youtube.com/watch?v=shared-video",
+            title="Shared recording",
+            work_id="w2",
+            voice_guess="alto",
+        ),
+    )
+
+    assert sync_discovered_candidates(db_path) == 2
+    assert len(ranked_videos(db_path, "w1", "soprano")) == 1
+    assert len(ranked_videos(db_path, "w2", "alto")) == 1
