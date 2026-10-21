@@ -15,6 +15,7 @@ from .discovery import discover_work, load_work
 from .export import export_candidates
 from .models import Voice
 from .review_html import export_review_html
+from .local_web import serve_review_ui
 from .youtube import YouTubeAPIError, YouTubeClient
 
 app = typer.Typer(no_args_is_help=True, help="Descubrimiento de audios de YouTube para OSAP.")
@@ -165,6 +166,13 @@ def sync_review(
     print(f"[green]Synchronized {count} discovered candidates into local review tables.[/green]")
 
 
+@app.command("web")
+def web_review() -> None:
+    """Launch the local search and video-review website."""
+    settings = get_settings()
+    serve_review_ui(settings.db_path)
+
+
 @app.command("export-review-html")
 def export_review_html_command(
     output: Path = typer.Option(
@@ -183,11 +191,6 @@ def export_review_html_command(
         raise typer.BadParameter(str(exc)) from exc
     print(f"[green]Exported {count} work/video/voice associations to:[/green] {output}")
     print("[yellow]Read-only HTML: apply editorial changes with review-video.[/yellow]")
-
-
-if __name__ == "__main__":
-    app()
-
 
 
 @app.command("review-video")
