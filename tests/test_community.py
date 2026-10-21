@@ -6,6 +6,7 @@ from ai_recogeyoutube.community import (
     initialize_community_schema,
     ranked_videos,
     record_promotion,
+    set_review_status,
     sync_discovered_candidates,
 )
 from ai_recogeyoutube.db import initialize, upsert_candidate, upsert_work
@@ -122,3 +123,54 @@ def test_sync_keeps_same_video_linked_to_multiple_works(tmp_path: Path) -> None:
     assert sync_discovered_candidates(db_path) == 2
     assert len(ranked_videos(db_path, "w1", "soprano")) == 1
     assert len(ranked_videos(db_path, "w2", "alto")) == 1
+
+
+
+def test_moderator_review_status_is_independent_of_votes_and_controls_ranking(
+    tmp_path: Path,
+) -> None:
+    db_path = tmp_path / "pilot.db"
+    setup_work(db_path)
+    for video_id, title in [("video-1", "First candidate"), ("video-2", "Second candidate")]:
+        upsert_candidate(
+            db_path,
+            YouTubeCandidate(
+                video_id=video_id,
+                url=f"https://www.youtube.com/watch?v={video_id}",
+                title=title,
+                work_id="w1",
+                voice_guess="soprano",
+            ),
+        )
+    sync_discovered_candidates(db_path, "w1")
+    record_promotion(
+        db_path, user_id="u1", display_name="u1", work_id="w1",
+        video_id="video-2", url="https://www.youtube.com/watch?v=video-2",
+        title="Second candidate", voice="soprano", decision="approved",
+    )
+    set_review_status(
+        db_path, work_id="w1", video_id="video-1", voice="soprano", status="confirmed"
+    )
+    set_review_status(
+        db_path, work_id="w1", video_id="video-2", voice="soprano", status="rejected"
+    )
+
+    rows = ranked_videos(db_path, "w1", "soprano")
+    assert [row["video_id"] for row in rows] == ["video-1", "video-2"]
+    assert rows[0]["review_status"] == "confirmed"
+    assert rows[0]["approval_count"] == 0
+    assert rows[1]["review_status"] == "rejected"
+    assert rows[1]["approval_count"] == 1
+
+
+def test_review_status_rejects_invalid_values_and_unknown_associations(tmp_path: Path) -> None:
+    db_path = tmp_path / "pilot.db"
+    setup_work(db_path)
+    with pytest.raises(ValueError, match="status must be"):
+        set_review_status(
+            db_path, work_id="w1", video_id="missing", voice="soprano", status="approved"
+        )
+    with pytest.raises(ValueError, match="No candidate found"):
+        set_review_status(
+            db_path, work_id="w1", video_id="missing", voice="soprano", status="confirmed"
+        )
