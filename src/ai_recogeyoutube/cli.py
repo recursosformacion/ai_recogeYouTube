@@ -208,3 +208,7 @@ def review_video(
         raise typer.BadParameter(str(exc)) from exc
     print(f"[green]Review status updated:[/green] {work_id} · {voice} · {status}")
     print("[yellow]This changes moderator review state, not community vote counts.[/yellow]")
+
+
+if __name__ == "__main__":
+    app()
