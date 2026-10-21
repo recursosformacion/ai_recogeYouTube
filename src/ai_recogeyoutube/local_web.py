@@ -180,7 +180,7 @@ for(const item of d.results){const card=document.createElement('article');card.c
 const info=document.createElement('div'),h=document.createElement('h2'),meta=document.createElement('div'),link=document.createElement('a'),badge=document.createElement('span');
 h.textContent=item.work_title;link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=item.video_title;
 meta.className='meta';meta.append(link,document.createElement('br'));meta.lastChild.after(document.createTextNode('Autor/canal: '+(item.channel||'Canal desconocido')+' · votos: '+item.approval_count+' · votos del autor: '+item.author_votes+' · última votación: '+item.last_vote+' · voz: '+item.voice));
-info.append(h,meta);const actions=document.createElement('div');actions.className='actions';const button=document.createElement('button');button.className='primary';button.textContent='Revisar vídeo';
+info.append(h,meta);const actions=document.createElement('div');actions.className='actions';const button=document.createElement('button');button.className='primary';button.textContent='Revisar vídeo';if(!item.work_id){button.disabled=true;button.title='No se ha encontrado una obra coincidente en el catálogo importado';}
 const review=new URL('/review',location.origin);for(const [k,v] of Object.entries({work_id:item.work_id,video_id:item.video_id,voice:item.voice,title:item.video_title}))review.searchParams.set(k,v);
 button.onclick=()=>window.open(review,'review_'+item.video_id,'width=1000,height=800,resizable=yes,scrollbars=yes');
 actions.append(button);card.append(info,actions);results.append(card)}
