@@ -86,6 +86,18 @@ Consulta `docs/ARCHITECTURE.md` y `docs/ROADMAP.md`.
 - El análisis acústico y la comparación con partituras se incorporan después de validar el descubrimiento.
 
 
+## Panel HTML de revisión
+
+Para revisar los candidatos en una página local con filtros por texto, estado editorial y voz:
+
+```powershell
+ai-youtube export-review-html
+# Opcional: limitar a una obra y elegir la ruta del archivo
+ai-youtube export-review-html --work-id ID_DE_OBRA --output data/revision-obra.html
+```
+
+Abre el archivo HTML generado en el navegador. Es una exportación autónoma de solo lectura: permite filtrar candidatos y abrir los vídeos en YouTube, pero no ejecuta cambios en la base de datos desde el navegador. Para guardar una decisión editorial, usa `review-video`; para registrar una aprobación o rechazo comunitario local, usa `promote-video`. La exportación no modifica OSAP.
+
 ## Modelo local de validación comunitaria
 
 El piloto incluye un modelo SQLite independiente documentado en [`docs/DATA_MODEL_COMMUNITY.md`](docs/DATA_MODEL_COMMUNITY.md). Separa:
