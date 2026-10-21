@@ -14,6 +14,7 @@ from .db import initialize
 from .discovery import discover_work, load_work
 from .export import export_candidates
 from .models import Voice
+from .review_html import export_review_html
 from .youtube import YouTubeAPIError, YouTubeClient
 
 app = typer.Typer(no_args_is_help=True, help="Descubrimiento de audios de YouTube para OSAP.")
@@ -162,6 +163,26 @@ def sync_review(
     except (ValueError, OSError) as exc:
         raise typer.BadParameter(str(exc)) from exc
     print(f"[green]Synchronized {count} discovered candidates into local review tables.[/green]")
+
+
+@app.command("export-review-html")
+def export_review_html_command(
+    output: Path = typer.Option(
+        Path("data/review.html"), "--output", "-o",
+        help="Destination for a standalone, filterable HTML review board.",
+    ),
+    work_id: str | None = typer.Option(
+        None, "--work-id", help="Optional exact work ID to export only one work."
+    ),
+) -> None:
+    """Generate a read-only HTML review board from local candidates and community votes."""
+    settings = get_settings()
+    try:
+        count = export_review_html(settings.db_path, output, work_id)
+    except (OSError, ValueError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print(f"[green]Exported {count} work/video/voice associations to:[/green] {output}")
+    print("[yellow]Read-only HTML: apply editorial changes with review-video.[/yellow]")
 
 
 if __name__ == "__main__":
