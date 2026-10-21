@@ -132,6 +132,7 @@ def rank_videos(
 ) -> None:
     """List local video candidates ranked by review status and community decisions."""
     settings = get_settings()
+    initialize(settings.db_path)
     try:
         rows = ranked_videos(settings.db_path, work_id, voice)
     except (ValueError, OSError) as exc:
