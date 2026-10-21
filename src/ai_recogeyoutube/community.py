@@ -128,6 +128,54 @@ def record_promotion(
         )
 
 
+
+def sync_discovered_candidates(db_path: Path, work_id: str | None = None) -> int:
+    """Copy locally discovered candidates into the normalized community tables.
+
+    This keeps discovery and community review separate: imported candidates stay
+    pending until a user or moderator makes a decision.
+    """
+    initialize_community_schema(db_path)
+    with connect(db_path) as db:
+        sql = """SELECT video_id, work_id, title, url, payload_json
+                 FROM candidates WHERE work_id IS NOT NULL"""
+        params: tuple = ()
+        if work_id:
+            sql += " AND work_id=?"
+            params = (work_id,)
+        rows = db.execute(sql, params).fetchall()
+        count = 0
+        for row in rows:
+            payload = __import__("json").loads(row["payload_json"])
+            video_id = row["video_id"]
+            db.execute(
+                """INSERT INTO youtube_videos(video_id,url,title,channel_title,metadata_json)
+                   VALUES (?,?,?,?,?)
+                   ON CONFLICT(video_id) DO UPDATE SET
+                     url=excluded.url, title=excluded.title,
+                     channel_title=excluded.channel_title,
+                     metadata_json=excluded.metadata_json,
+                     last_seen_at=CURRENT_TIMESTAMP""",
+                (video_id, row["url"], row["title"],
+                 payload.get("channel_title", ""),
+                 __import__("json").dumps(payload, ensure_ascii=False)),
+            )
+            voice = payload.get("voice_guess", "unknown")
+            if voice not in {"soprano", "alto", "tenor", "bass", "all", "unknown"}:
+                voice = "unknown"
+            material_type = payload.get("material_type", "unknown")
+            db.execute(
+                """INSERT INTO work_videos(work_id,video_id,voice,material_type)
+                   VALUES (?,?,?,?)
+                   ON CONFLICT(work_id,video_id,voice) DO UPDATE SET
+                     material_type=excluded.material_type,
+                     updated_at=CURRENT_TIMESTAMP""",
+                (row["work_id"], video_id, voice, material_type),
+            )
+            count += 1
+        return count
+
+
 def ranked_videos(db_path: Path, work_id: str, voice: str) -> list[dict]:
     """Return candidates for a work/voice, with community approvals first."""
     initialize_community_schema(db_path)
