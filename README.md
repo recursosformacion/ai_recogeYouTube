@@ -135,3 +135,6 @@ El estado editorial se gestiona por separado de los votos de la comunidad:
 - `rejected`: asociación revisada y descartada; queda detrás de pendientes.
 
 `review-video` requiere que la asociación ya exista en las tablas de revisión, normalmente tras ejecutar `sync-review`. Los votos comunitarios no cambian por modificar el estado editorial, y el estado editorial no suma votos.
+## Interfaz local de búsqueda y revisión
+
+Ejecuta `ai-youtube web` y abre `http://127.0.0.1:8765` en el navegador. Busca por título de la obra, compositor y voz; los campos de texto vacíos no aplican filtro. Selecciona «Todas las voces» para no restringir por voz. Cada resultado abre una ventana con el reproductor de YouTube y los botones Aceptar/Rechazar. La decisión queda guardada en SQLite local como voto del revisor local. El servidor escucha solo en `127.0.0.1`; no se conecta a OSAP ni requiere credenciales web.
