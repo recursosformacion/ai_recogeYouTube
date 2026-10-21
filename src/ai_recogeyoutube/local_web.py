@@ -157,9 +157,9 @@ document.getElementById('reject').onclick=()=>decide('rejected');
 </script>""".replace("__DATA__", json.dumps({
                     "work_id": work_id, "video_id": video_id, "voice": voice,
                     "url": "https://www.youtube.com/watch?v=" + video_id, "title": title,
-                    "user_id": params.get("user", [""])[0].trim() || "anonymous",
-                    "display_name": params.get("user", [""])[0].trim() || "anonymous",
-                }, ensure_ascii=False).replace("</", "<\/"))
+                    "user_id": params.get("user", [""])[0].strip() or "anonymous",
+                    "display_name": params.get("user", [""])[0].strip() or "anonymous",
+                }, ensure_ascii=False).replace("</", "<\\/"))
                 self.send_html(_page("Revisar vídeo", content, script))
                 return
             content = """<h1>Buscar vídeos para una obra musical</h1>
