@@ -122,7 +122,7 @@ def serve_review_ui(db_path: Path, host: str = "127.0.0.1", port: int = 8765) ->
                         voice=params.get("voice", ["all"])[0],
                     )
                     self.send_json({"results": items, "count": len(items)})
-                except (ValueError, OSError) as exc:
+                except (ValueError, OSError, RuntimeError) as exc:
                     self.send_json({"error": str(exc)}, 400)
                 return
             if parsed.path == "/review":
