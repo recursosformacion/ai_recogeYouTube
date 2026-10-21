@@ -9,6 +9,7 @@ from html import escape
 from .community import record_promotion
 from .db import connect, initialize
 from .config import get_settings
+from .global_search import search_global
 
 
 def search_candidates(
@@ -114,7 +115,7 @@ def serve_review_ui(db_path: Path, host: str = "127.0.0.1", port: int = 8765) ->
             params = parse_qs(parsed.query)
             if parsed.path == "/api/search":
                 try:
-                    items = search_candidates(
+                    items = search_global(
                         db_path,
                         song=params.get("song", [""])[0],
                         author=params.get("author", [""])[0],
@@ -173,12 +174,12 @@ document.getElementById('reject').onclick=()=>decide('rejected');
 const form=document.getElementById('search'),results=document.getElementById('results'),summary=document.getElementById('summary');
 form.addEventListener('submit',async e=>{e.preventDefault();results.replaceChildren();summary.textContent='Buscando…';
 const p=new URLSearchParams(new FormData(form));try{const r=await fetch('/api/search?'+p);const d=await r.json();if(!r.ok)throw new Error(d.error||'Error de búsqueda');
-summary.textContent=d.count+' candidatos encontrados'+(d.count===100?' (máximo mostrado: 100)':'');
-if(!d.results.length){results.textContent='No hay candidatos que coincidan. Ejecuta primero el descubrimiento de vídeos para ampliar el catálogo local.';return}
+summary.textContent=d.count+' vídeos encontrados en la búsqueda global.';
+if(!d.results.length){results.textContent='YouTube no ha devuelto resultados para esta consulta.';return}
 for(const item of d.results){const card=document.createElement('article');card.className='result';
 const info=document.createElement('div'),h=document.createElement('h2'),meta=document.createElement('div'),link=document.createElement('a'),badge=document.createElement('span');
 h.textContent=item.work_title;link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.textContent=item.video_title;
-meta.className='meta';meta.append(link,document.createElement('br'));meta.lastChild.after(document.createTextNode((item.channel||'Canal desconocido')+' · voz: '+item.voice+' · '+item.material_type));
+meta.className='meta';meta.append(link,document.createElement('br'));meta.lastChild.after(document.createTextNode('Autor/canal: '+(item.channel||'Canal desconocido')+' · votos: '+item.approval_count+' · votos del autor: '+item.author_votes+' · última votación: '+item.last_vote+' · voz: '+item.voice));
 info.append(h,meta);const actions=document.createElement('div');actions.className='actions';const button=document.createElement('button');button.className='primary';button.textContent='Revisar vídeo';
 const review=new URL('/review',location.origin);for(const [k,v] of Object.entries({work_id:item.work_id,video_id:item.video_id,voice:item.voice,title:item.video_title}))review.searchParams.set(k,v);
 button.onclick=()=>window.open(review,'review_'+item.video_id,'width=1000,height=800,resizable=yes,scrollbars=yes');
