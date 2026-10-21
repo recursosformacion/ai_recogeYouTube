@@ -6,7 +6,7 @@ import typer
 from rich import print
 
 from .catalog import import_catalog_csv
-from .community import ranked_videos, record_promotion
+from .community import ranked_videos, record_promotion, sync_discovered_candidates
 from .config import get_settings
 from .db import initialize
 from .discovery import discover_work, load_work
@@ -134,6 +134,7 @@ def rank_videos(
     settings = get_settings()
     initialize(settings.db_path)
     try:
+        sync_discovered_candidates(settings.db_path, work_id)
         rows = ranked_videos(settings.db_path, work_id, voice)
     except (ValueError, OSError) as exc:
         raise typer.BadParameter(str(exc)) from exc
@@ -145,6 +146,20 @@ def rank_videos(
             f"{row['approval_count']} approvals / {row['rejection_count']} rejections"
             f" · {row['review_status']} · {row['voice']} · {row['title']} · {row['url']}"
         )
+
+
+@app.command("sync-review")
+def sync_review(
+    work_id: str | None = typer.Option(None, "--work-id", help="Optional exact work ID."),
+) -> None:
+    """Copy locally discovered candidates into the community review tables."""
+    settings = get_settings()
+    initialize(settings.db_path)
+    try:
+        count = sync_discovered_candidates(settings.db_path, work_id)
+    except (ValueError, OSError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print(f"[green]Synchronized {count} discovered candidates into local review tables.[/green]")
 
 
 if __name__ == "__main__":
