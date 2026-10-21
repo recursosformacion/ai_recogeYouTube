@@ -8,6 +8,7 @@ from html import escape
 
 from .community import record_promotion
 from .db import connect, initialize
+from .config import get_settings
 
 
 def search_candidates(
@@ -160,12 +161,12 @@ document.getElementById('reject').onclick=()=>decide('rejected');
                 self.send_html(_page("Revisar vídeo", content, script))
                 return
             content = """<h1>Buscar vídeos para una obra musical</h1>
-<p>Busca candidatos guardados en el catálogo local y revisa cada vídeo antes de aceptarlo.</p>
-<div class="notice">Un campo vacío no aplica ese filtro. «Todas las voces» muestra candidatos de cualquier voz.</div>
+<p>El formulario debe consultar YouTube en directo y guardar metadatos localmente. No descarga audio ni modifica OSAP.</p>
+<div class="notice">«Todas las voces» busca las cuatro cuerdas y una consulta general. «Canción completa / sin voz» busca sin añadir términos de cuerda.</div>
 <div class="panel"><form id="search">
 <label>Canción / título<input name="song" placeholder="Título de la obra"></label>
 <label>Autor / compositor<input name="author" placeholder="Nombre del compositor"></label>
-<label>Voz<select name="voice"><option value="all">Todas las voces</option><option value="soprano">Soprano</option><option value="alto">Alto</option><option value="tenor">Tenor</option><option value="bass">Bajo</option></select></label>
+<label>Tipo de búsqueda<select name="voice"><option value="all">Todas las voces</option><option value="song">Canción completa / sin voz</option><option value="soprano">Soprano</option><option value="alto">Alto</option><option value="tenor">Tenor</option><option value="bass">Bajo</option></select></label>
 <button class="primary" type="submit">Buscar</button></form></div>
 <p id="summary" aria-live="polite">Introduce uno o varios filtros y pulsa Buscar.</p><div id="results" class="results"></div>"""
             script = """<script>
