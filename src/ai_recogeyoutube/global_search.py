@@ -46,14 +46,18 @@ def search_global(db_path: Path, *, song: str = "", author: str = "", voice: str
         queries = [f"{base} {voice}", f"{base} {voice} choir"]
     client = YouTubeClient(settings.youtube_api_key)
     found = {}
-    for query in queries:
+    for query_index, query in enumerate(queries):
         if not query.strip():
             continue
         for candidate in client.search_videos(query, max_results=min(15, max(5, limit // len(queries) + 3))):
+            if candidate.video_id in found:
+                continue
             if work:
                 candidate.work_id = work["work_id"]
                 if voice in {"soprano", "alto", "tenor", "bass"}:
                     candidate.voice_guess = Voice(voice)
+                elif voice == "all" and query_index < 4:
+                    candidate.voice_guess = Voice(("soprano", "alto", "tenor", "bass")[query_index])
             upsert_candidate(db_path, candidate)
             found[candidate.video_id] = candidate
             if len(found) >= limit:
