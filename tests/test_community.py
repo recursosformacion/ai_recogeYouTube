@@ -9,8 +9,7 @@ from ai_recogeyoutube.community import (
     sync_discovered_candidates,
 )
 from ai_recogeyoutube.db import upsert_candidate, upsert_work
-from ai_recogeyoutube.models import YouTubeCandidate
-from ai_recogeyoutube.models import WorkRecord
+from ai_recogeyoutube.models import WorkRecord, YouTubeCandidate
 
 
 def setup_work(db_path: Path) -> None:
