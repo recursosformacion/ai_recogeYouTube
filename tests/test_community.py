@@ -8,11 +8,12 @@ from ai_recogeyoutube.community import (
     record_promotion,
     sync_discovered_candidates,
 )
-from ai_recogeyoutube.db import upsert_candidate, upsert_work
+from ai_recogeyoutube.db import initialize, upsert_candidate, upsert_work
 from ai_recogeyoutube.models import WorkRecord, YouTubeCandidate
 
 
 def setup_work(db_path: Path) -> None:
+    initialize(db_path)
     upsert_work(db_path, WorkRecord(work_id="w1", title="Ave verum corpus"))
     initialize_community_schema(db_path)
 
