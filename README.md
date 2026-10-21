@@ -84,3 +84,30 @@ Consulta `docs/ARCHITECTURE.md` y `docs/ROADMAP.md`.
 - Los títulos, descripciones y listas son indicios, no prueba de qué se oye.
 - El sistema guarda metadatos y enlaces; no descarga audios.
 - El análisis acústico y la comparación con partituras se incorporan después de validar el descubrimiento.
+
+
+## Modelo local de validación comunitaria
+
+El piloto incluye un modelo SQLite independiente documentado en [`docs/DATA_MODEL_COMMUNITY.md`](docs/DATA_MODEL_COMMUNITY.md). Separa:
+
+- `youtube_videos`: metadatos únicos por ID de YouTube.
+- `work_videos`: relación obra/vídeo/voz.
+- `users`: identidades locales de prueba.
+- `promotions`: una decisión por usuario, obra, vídeo y voz.
+- `work_video_scores`: vista con contadores calculados desde las decisiones, sin duplicar votos.
+
+Después de descubrir candidatos, se pueden sincronizar con las tablas de revisión:
+
+```powershell
+ai-youtube sync-review --work-id ID_DE_OBRA
+ai-youtube rank-videos ID_DE_OBRA --voice soprano
+```
+
+Para probar una aprobación manual en la base local:
+
+```powershell
+ai-youtube promote-video --work-id ID_DE_OBRA --video-id ID_YOUTUBE --url "https://www.youtube.com/watch?v=ID_YOUTUBE" --title "Título del vídeo" --user-id prueba-1 --voice soprano --decision approved
+ai-youtube rank-videos ID_DE_OBRA --voice soprano
+```
+
+Los IDs de usuario de estos comandos son únicamente etiquetas locales de prueba; no equivalen a usuarios autenticados. La API futura debe obtener la identidad desde el servidor. Todo el modelo comunitario es experimental y no escribe en OSAP.
