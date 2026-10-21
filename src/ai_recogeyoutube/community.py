@@ -4,6 +4,7 @@ This pilot stores no credentials and does not connect to OSAP. User IDs are loca
 pseudonymous identifiers; a future OSAP adapter must derive identity from its
 authenticated session rather than trusting a client-supplied user ID.
 """
+import json
 from pathlib import Path
 import sqlite3
 
@@ -146,7 +147,7 @@ def sync_discovered_candidates(db_path: Path, work_id: str | None = None) -> int
         rows = db.execute(sql, params).fetchall()
         count = 0
         for row in rows:
-            payload = __import__("json").loads(row["payload_json"])
+            payload = json.loads(row["payload_json"])
             video_id = row["video_id"]
             db.execute(
                 """INSERT INTO youtube_videos(video_id,url,title,channel_title,metadata_json)
@@ -158,7 +159,7 @@ def sync_discovered_candidates(db_path: Path, work_id: str | None = None) -> int
                      last_seen_at=CURRENT_TIMESTAMP""",
                 (video_id, row["url"], row["title"],
                  payload.get("channel_title", ""),
-                 __import__("json").dumps(payload, ensure_ascii=False)),
+                 json.dumps(payload, ensure_ascii=False)),
             )
             voice = payload.get("voice_guess", "unknown")
             if voice not in {"soprano", "alto", "tenor", "bass", "all", "unknown"}:
