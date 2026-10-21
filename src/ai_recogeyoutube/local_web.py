@@ -8,7 +8,6 @@ from html import escape
 
 from .community import record_promotion
 from .db import connect, initialize
-from .config import get_settings
 from .global_search import search_global
 
 
