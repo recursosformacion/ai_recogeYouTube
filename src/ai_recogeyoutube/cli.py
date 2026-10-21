@@ -1,10 +1,16 @@
 """Command-line entry points."""
 
+from pathlib import Path
+
 import typer
 from rich import print
 
+from .catalog import import_catalog_csv
 from .config import get_settings
 from .db import initialize
+from .discovery import discover_work, load_work
+from .models import Voice
+from .youtube import YouTubeAPIError, YouTubeClient
 
 app = typer.Typer(no_args_is_help=True, help="Descubrimiento de audios de YouTube para OSAP.")
 
@@ -26,6 +32,46 @@ def init_db() -> None:
     settings = get_settings()
     initialize(settings.db_path)
     print(f"[green]Local database initialized:[/green] {settings.db_path}")
+
+
+@app.command("import-catalog")
+def import_catalog(csv_file: Path = typer.Argument(..., exists=True, readable=True)) -> None:
+    """Import a CSV export of OSAP works into the local database."""
+    settings = get_settings()
+    initialize(settings.db_path)
+    try:
+        count = import_catalog_csv(csv_file, settings.db_path)
+    except (ValueError, OSError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print(f"[green]Imported/updated {count} works locally.[/green]")
+
+
+@app.command("discover-work")
+def discover_one(
+    work_id: str = typer.Argument(..., help="Exact work_id from the imported OSAP catalog."),
+    voice: list[Voice] = typer.Option(
+        [Voice.SOPRANO, Voice.ALTO, Voice.TENOR, Voice.BASS],
+        "--voice",
+        help="Repeat to select voices; defaults to all four SATB voices.",
+    ),
+    queries_per_voice: int = typer.Option(2, min=1, max=10),
+) -> None:
+    """Search YouTube for one work; intentionally bounded to control quota."""
+    settings = get_settings()
+    if not settings.youtube_api_key:
+        raise typer.BadParameter("Set YOUTUBE_API_KEY in .env before discovery.")
+    initialize(settings.db_path)
+    try:
+        work = load_work(settings.db_path, work_id)
+        stats = discover_work(
+            work, voice, YouTubeClient(settings.youtube_api_key), settings.db_path,
+            max_results=settings.max_results, max_queries_per_voice=queries_per_voice,
+        )
+    except (ValueError, YouTubeAPIError) as exc:
+        raise typer.BadParameter(str(exc)) from exc
+    print(f"[green]Discovery finished for {work.title}[/green]")
+    print(stats)
+    print("[yellow]Results are candidates only; review before treating a voice as verified.[/yellow]")
 
 
 if __name__ == "__main__":
