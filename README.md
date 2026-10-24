@@ -142,3 +142,15 @@ Ejecuta `ai-youtube web` y abre `http://127.0.0.1:8765`. El formulario lanza bú
 ## Integración directa desde OSAP
 
 La interfaz web es solo una forma de probar el flujo. Una integración puede llamar directamente a las funciones Python para buscar vídeos y registrar votos, pasando el identificador de usuario que OSAP ya conoce, sin implementar autenticación en este piloto. El contrato, los parámetros, resultados y errores están descritos en [`docs/INTEGRATION_CONTRACT.md`](docs/INTEGRATION_CONTRACT.md). La integración utiliza la base local del piloto; no implica conectar ni escribir directamente en la base de datos de producción de OSAP.
+
+
+## Ecosistema OSAP
+
+Este repositorio es una herramienta independiente para descubrir y revisar grabaciones relacionadas con obras musicales. La integración directa con OSAP se plantea mediante el contrato documentado; el piloto no escribe en la base de datos de producción.
+
+- **[OSAP core](https://github.com/recursosformacion/AI_GAMEPC2)** — motor principal de resolución de recursos musicales.
+- [ai-importacion](https://github.com/recursosformacion/ai-importacion) — descubrimiento y revisión de materiales de Internet Archive.
+- [AI_osap-auth](https://github.com/recursosformacion/AI_osap-auth) — servicio de identidad y autenticación.
+- [AI_osap-storage](https://github.com/recursosformacion/AI_osap-storage) — servicio de datos y almacenamiento del catálogo.
+- [AI_osap-support](https://github.com/recursosformacion/AI_osap-support) — soporte, donaciones y membresías.
+- Sitio público: [openmusicrepository.com](https://openmusicrepository.com)
