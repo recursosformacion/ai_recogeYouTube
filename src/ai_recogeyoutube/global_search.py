@@ -1,5 +1,8 @@
 """Global YouTube search used by the local review website."""
 import json
+import re
+import unicodedata
+from collections.abc import Iterable
 from pathlib import Path
 
 from .community import initialize_community_schema
@@ -8,9 +11,56 @@ from .db import connect, initialize, upsert_candidate
 from .models import Voice
 from .youtube import YouTubeClient
 
+VOICE_ALIASES: dict[str, tuple[str, ...]] = {
+    "soprano": (
+        "soprano", "soprani", "sopranos", "sopran", "sopranstimme",
+        "soprano voice", "voz soprano", "veu soprano", "voix soprano", "voce soprano",
+    ),
+    "alto": (
+        "alto", "contralto", "alt", "contralti", "altus", "altstimme",
+        "altos", "alto voice", "voz alto", "veu alto", "voix alto", "voce alto",
+    ),
+    "tenor": (
+        "tenor", "ténor", "tenore", "tenori", "tenorstimme", "tenor voice",
+        "tenors", "voz tenor", "veu tenor", "voix tenor", "voce tenor",
+    ),
+    "bass": (
+        "bass", "bajo", "baix", "basse", "basso", "baixo",
+        "bass voice", "bassstimme", "bassi", "basses", "bajos", "baixos", "bas",
+    ),
+}
 
-def search_global(db_path: Path, *, song: str = "", author: str = "", voice: str = "all", limit: int = 50) -> list[dict]:
-    """Search YouTube live. 'all' means all SATB queries; 'song' adds no voice term."""
+
+def _fold(text: str) -> str:
+    value = unicodedata.normalize("NFKD", text or "")
+    value = "".join(ch for ch in value if not unicodedata.combining(ch))
+    value = re.sub(r"[^a-z0-9]+", " ", value.casefold()).strip()
+    return value
+
+
+def infer_voice(*parts: str) -> Voice:
+    text = _fold(" ".join(part for part in parts if part))
+    padded = f" {text} "
+    for voice, aliases in VOICE_ALIASES.items():
+        if any(f" {_fold(alias)} " in padded for alias in aliases):
+            return Voice(voice)
+    return Voice.UNKNOWN
+
+
+def search_global(
+    db_path: Path,
+    *,
+    song: str = "",
+    author: str = "",
+    voice: str = "all",
+    limit: int = 50,
+    voice_terms: Iterable[str] | None = None,
+) -> list[dict]:
+    """Search YouTube live. 'all' means all SATB queries; 'song' adds no voice term.
+
+    `voice_terms` allows the caller to supply localized aliases (bajo, baix, basse,
+    basso…) for a requested voice without duplicating the search engine.
+    """
     song, author, voice = song.strip(), author.strip(), voice.strip().casefold()
     if not song and not author:
         raise ValueError("Escribe al menos el título de la obra o el compositor.")
@@ -43,7 +93,13 @@ def search_global(db_path: Path, *, song: str = "", author: str = "", voice: str
     elif voice == "song":
         queries = [base]
     else:
-        queries = [f"{base} {voice}", f"{base} {voice} choir"]
+        aliases = [
+            term.strip()
+            for term in (voice_terms or VOICE_ALIASES.get(voice, ()))
+            if term.strip()
+        ]
+        terms = list(dict.fromkeys([voice, *aliases]))[:6]
+        queries = [f"{base} {term}" for term in terms]
     client = YouTubeClient(settings.youtube_api_key)
     found = {}
     for query_index, query in enumerate(queries):
@@ -52,12 +108,11 @@ def search_global(db_path: Path, *, song: str = "", author: str = "", voice: str
         for candidate in client.search_videos(query, max_results=min(15, max(5, limit // len(queries) + 3))):
             if candidate.video_id in found:
                 continue
+            candidate.voice_guess = infer_voice(
+                candidate.title, candidate.description, candidate.channel_title
+            )
             if work:
                 candidate.work_id = work["work_id"]
-                if voice in {"soprano", "alto", "tenor", "bass"}:
-                    candidate.voice_guess = Voice(voice)
-                elif voice == "all" and query_index < 4:
-                    candidate.voice_guess = Voice(("soprano", "alto", "tenor", "bass")[query_index])
             upsert_candidate(db_path, candidate)
             found[candidate.video_id] = candidate
             if len(found) >= limit:
@@ -104,6 +159,7 @@ def search_global(db_path: Path, *, song: str = "", author: str = "", voice: str
                 "video_id": c.video_id, "video_title": c.title or "Vídeo sin título",
                 "url": str(c.url), "channel": c.channel_title or "Canal desconocido",
                 "voice": v, "material_type": c.material_type.value,
+                "description": c.description,
                 "approval_count": approvals, "rejection_count": rejections,
                 "author_votes": author_votes, "last_vote": last_vote,
             })
