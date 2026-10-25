@@ -87,7 +87,7 @@ def search_global(
                 continue
             work = {"work_id": row["work_id"], "title": row["title"], "composers": composers}
             break
-    base = " ".join(x for x in ((f'"{song}"' if song else ""), (f'"{author}"' if author else "")) if x)
+    base = " ".join(x for x in (song, author) if x)
     if voice == "all":
         queries = [f"{base} {v}" for v in ("soprano", "alto", "tenor", "bass")] + [base]
     elif voice == "song":
